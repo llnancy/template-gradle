@@ -1,0 +1,6 @@
+// ext：自定义属性。
+ext {
+    organization = 'SunChaser'
+    jdk = [compileJdkVersion: JavaVersion.VERSION_1_8]
+    spring = [version: '5.3.23']
+}

@@ -1,0 +1,217 @@
+import java.nio.charset.StandardCharsets
+
+// 第三方插件的配置方式二：先配置maven仓库地址和类路径classpath，再apply应用插件。
+// buildscript {
+//     repositories {
+//         maven {
+//             url "https://plugins.gradle.org/m2/"
+//         }
+//     }
+//     dependencies {
+//         classpath "org.springframework.boot:spring-boot-gradle-plugin:2.7.4"
+//     }
+// }
+//
+// apply plugin: "org.springframework.boot"
+
+// 二进制插件
+// 方式一：plugins dsl（推荐）
+plugins {
+    id 'java'
+    // 支持带source源码和JavaDoc文档的发布
+    id 'java-library'
+    // 发布至maven仓库
+    id 'maven-publish'
+}
+// 方式二：apply方式
+// 形式一：apply(map具名参数)：
+// map的key为固定值plugin，value有三种写法：插件ID、插件全限定类名和插件的简类名。
+// 写法一：插件ID
+// apply(plugin: 'java')
+// apply plugin: 'java'
+// 写法二：插件全限定类名
+// apply plugin: org.gradle.api.plugins.JavaPlugin
+// 写法三：插件简类名
+// apply plugin: JavaPlugin
+// 形式二：apply闭包
+// apply {
+//     plugin: 'java'
+// }
+// 第三方插件
+// 方式一：plugins dsl（推荐）
+// plugins {
+//     id "org.springframework.boot" version "2.7.4"
+// }
+
+// 方式二：旧版。必须放在build.gradle文件顶部。且不能和plugins dsl形式混用。
+
+// 项目组织。相当于maven中GAV坐标的<group>标签。
+group 'com.sunchaser.template'
+// 项目版本号。相当于maven中GAV坐标的<version>标签。
+version '1.0-SNAPSHOT'
+
+// 项目编译版本。相当于maven项目中的<maven.compiler.source>标签。
+sourceCompatibility = JavaVersion.VERSION_1_8
+// 项目class字节码版本。相当于maven项目中的<maven.compiler.target>标签。
+targetCompatibility = JavaVersion.VERSION_1_8
+// 源代码编码字符集。相当于maven项目中的<project.build.sourceEncoding>标签。
+compileJava.options.encoding = StandardCharsets.UTF_8
+// 测试代码编码字符集。相当于maven项目中的<project.reporting.outputEncoding>标签。
+compileTestJava.options.encoding = StandardCharsets.UTF_8
+
+// maven仓库信息
+repositories {
+    // 本地仓库
+    mavenLocal()
+    // 中央仓库
+    mavenCentral()
+}
+
+// 项目依赖信息
+dependencies {
+    // Junit4
+    // testImplementation 'junit:junit:4.13.2'
+    // Junit5
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+    // 简写形式。groovy语法中小括号也可省略。
+    implementation('org.apache.logging.log4j:log4j:2.17.2')
+    // 完整写法
+    // 依赖类型：implementation
+    // 依赖组名（group）：org.apache.logging.log4j
+    // 依赖名称（name）：log4j
+    // 依赖版本号（version）：2.17.2
+    implementation(group: 'org.apache.logging.log4j', name: 'log4j', version: '2.17.2')
+
+    // 依赖子模块template-gradle-common
+    implementation(project('template-gradle-common'))
+
+    // 依赖本地jar包
+    // 文件集合方式
+    implementation(files('src/main/resources/lib/commons-lang3-3.8.1.jar'))
+    // 文件树方式
+    implementation(fileTree('dir': 'src/main/resources/lib', includes: ['*.jar'], excludes: []))
+
+    // 排除依赖后手动指定
+    // implementation('org.springframework.boot:spring-boot-starter-web:2.7.4') {
+    //     exclude(group: 'org.slf4j', module: 'slf4j-api')
+    // }
+    // implementation('org.slf4j:slf4j-api:2.0.1')
+
+    // implementation('org.springframework.boot:spring-boot-starter-web:2.7.4') {
+    //     // 关闭依赖传递
+    //     transitive(false)
+    // }
+    // implementation('org.slf4j:slf4j-api:2.0.1')
+
+    // 强制指定版本
+    // implementation('org.springframework.boot:spring-boot-starter-web:2.7.4')
+    // implementation('org.slf4j:slf4j-api:2.0.1!!')
+    // implementation('org.slf4j:slf4j-api') {
+    //     version {
+    //         strictly '2.0.1'
+    //     }
+    // }
+
+    // 动态版本号，一直使用最新版。不推荐。
+    implementation('org.springframework.boot:spring-boot-starter-web:2.7.4')
+    // implementation('org.slf4j:slf4j-api:+')
+    // implementation('org.slf4j:slf4j-api:latest.integration')
+    // 强制使用最新版
+    implementation('org.slf4j:slf4j-api') {
+        version {
+            strictly 'latest.integration'
+        }
+    }
+}
+
+test {
+    // Junit4
+    // useJUnit()
+    // Junit5
+    useJUnitPlatform()
+    enabled(true)
+    include('com/sunchaser/template/gradle/test/**')
+    exclude('com/sunchaser/template/gradle/test/**')
+}
+
+// 依赖冲突时，立即构建失败
+configurations.all {
+    Configuration configuration -> {
+        configuration.resolutionStrategy.failOnVersionConflict()
+    }
+}
+
+// 使用脚本插件
+apply from: 'version.gradle'
+task taskVersion {
+    doLast {
+        println "organization is ${organization}, jdk verison is ${jdk.compileJdkVersion}, spring version is ${spring.version}."
+    }
+}
+
+// 项目源集：设置项目源代码和测试代码位置。默认配置如下：
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+        resources {
+            srcDirs = ['src/test/resources']
+        }
+    }
+}
+
+// 项目发布
+javadoc.options.encoding = StandardCharsets.UTF_8
+
+java {
+    // 带source源码包
+    withSourcesJar()
+    // 带JavaDoc文档包
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        // 定义templateGradleLibrary发布任务，注意名称中不能包含短横线
+        templateGradleLibrary(MavenPublication) {
+            // maven GAV坐标信息
+            groupId = 'com.sunchaser.template'
+            artifactId = 'template-gradle'
+            version = '0.0.1'
+            // 发布jar包固定写法：from components.java
+            from components.java
+        }
+    }
+    repositories {
+        // 发布至maven本地仓库。默认位于USER_HOME/.m2/repository
+        // mavenLocal()
+        // 发布至其它maven仓库
+        maven {
+            // name：maven仓库名称。可选。
+            name = 'localRepo'
+            // url：发布地址，可以是本地仓库或者maven私服。必选。
+            url = layout.buildDirectory.dir('repo')
+            // url = 'https://repo.example.com'
+            // 根据版本号是否以SNAPSHOT结尾判断发布至快照版仓库还是正式版仓库
+            def snapshotRepo = layout.buildDirectory.dir('repos/snapshots')
+            def releaseRepo = layout.buildDirectory.dir('repos/releases')
+            url = version.endsWith('SNAPSHOT') ? snapshotRepo : releaseRepo
+            // 认证信息（用户名和密码）
+            // credentials {
+            //     username: 'SunChaser'
+            //     password: 'SunChaser-Gradle'
+            // }
+        }
+    }
+}

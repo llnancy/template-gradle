@@ -1,0 +1,3 @@
+rootProject.name = 'template-gradle'
+include 'template-gradle-common'
+
